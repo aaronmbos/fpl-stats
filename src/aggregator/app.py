@@ -17,10 +17,12 @@ async def main():
 
 
 async def get_player_data(page):
-    data = await page.locator(
-        "main > div > div:nth-child(2) > div > div > table"
-    ).get_attribute("class")
-    print(data)
+    player_info_btns = page.locator(
+        "main > div > div:nth-child(2) > div > div > table tbody tr > td:nth-child(1) > button:nth-child(1)"
+    )
+
+    for i in range(0, await player_info_btns.count()):
+        print(await player_info_btns.nth(i).all_text_contents())
 
 
 async def get_page_count(page):
