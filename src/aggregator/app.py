@@ -8,12 +8,19 @@ async def main():
         page = await browser.new_page()
         await page.goto("https://fantasy.premierleague.com/statistics")
 
+        await accept_cookies(page)
+
         page_count = await get_page_count(page)
+
         await get_player_data(page)
         # for x in range(1, page_count + 1):
         #     print(f"Page {x} of {page_count}")
 
         await browser.close()
+
+
+async def accept_cookies(page):
+    await page.locator("button#onetrust-accept-btn-handler").click()
 
 
 async def get_player_data(page):
@@ -22,7 +29,17 @@ async def get_player_data(page):
     )
 
     for i in range(0, await player_info_btns.count()):
-        print(await player_info_btns.nth(i).all_text_contents())
+        await player_info_btns.nth(i).click()
+        print(
+            (
+                await page.locator(
+                    'div#root-dialog > div[role="presentation"] > dialog > div > div:nth-child(2) > div:nth-child(1)'
+                ).all_inner_texts()
+            )[0].split("\n")
+        )
+        await page.locator(
+            'div#root-dialog > div[role="presentation"] > dialog > div div:nth-child(1) button'
+        ).click()
 
 
 async def get_page_count(page):
