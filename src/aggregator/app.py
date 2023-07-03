@@ -43,9 +43,13 @@ async def get_player_data(page):
                 ).all_inner_texts()
             )[0].split("\n")
         )
-        await page.locator(
-            'div#root-dialog > div[role="presentation"] > dialog > div div:nth-child(1) button'
-        ).click()
+        await close_player_dialog(page)
+
+
+async def close_player_dialog(page):
+    await page.locator(
+        'div#root-dialog > div[role="presentation"] > dialog > div div:nth-child(1) button'
+    ).click()
 
 
 async def get_page_count(page):
