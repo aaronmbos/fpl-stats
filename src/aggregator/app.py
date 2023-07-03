@@ -12,11 +12,17 @@ async def main():
 
         page_count = await get_page_count(page)
 
-        await get_player_data(page)
-        # for x in range(1, page_count + 1):
-        #     print(f"Page {x} of {page_count}")
+        for _ in range(0, page_count):
+            await get_player_data(page)
+            await click_next_page(page)
 
         await browser.close()
+
+
+async def click_next_page(page):
+    await page.locator(
+        "main > div#root > div:nth-child(2) > div > div:nth-child(1) > div:nth-child(5) > button:nth-child(4)"
+    ).click()
 
 
 async def accept_cookies(page):
