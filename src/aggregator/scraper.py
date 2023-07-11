@@ -61,6 +61,23 @@ async def click_next_page(page):
 def parse_player(raw_player):
     positions = ["Forward", "Midfielder", "Defender", "Goalkeeper"]
     is_flagged = raw_player[0] not in positions
+
     start_idx = 1 if is_flagged else 0
     end_idx = 24 if is_flagged else 23
-    print(raw_player[start_idx:end_idx])
+    clean_player = raw_player[start_idx:end_idx]
+
+    print(
+        {
+            "position": clean_player[0],
+            "name": clean_player[1],
+            "team": clean_player[2],
+            "price": float(clean_player[4][1 : len(clean_player[4]) - 1]),
+            "form": float(clean_player[7]),
+            "points_per_match": float(clean_player[9]),
+            "gameweek_points": int(clean_player[12]),
+            "total_points": int(clean_player[14]),
+            "total_bonus": int(clean_player[16]),
+            "ict_index": float(clean_player[18]),
+            "tsb": float(clean_player[21][:-1]),
+        }
+    )
