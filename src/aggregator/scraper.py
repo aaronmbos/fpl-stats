@@ -1,3 +1,4 @@
+from asyncio import sleep
 from playwright.async_api import async_playwright
 
 
@@ -37,13 +38,39 @@ async def get_player_data(page):
 
     for i in range(0, await player_info_btns.count()):
         await player_info_btns.nth(i).click()
-        raw_player = (
-            await page.locator(
-                'div#root-dialog > div[role="presentation"] > dialog > div > div:nth-child(2) > div:nth-child(1)'
-            ).all_inner_texts()
-        )[0].split("\n")
-        parse_player(raw_player)
+
+        player_summary = await get_player_summary(page)
+        await get_player_fixtures(page)
+
         await close_player_dialog(page)
+
+
+async def get_player_summary(page):
+    raw_player = (
+        await page.locator(
+            'div#root-dialog > div[role="presentation"] > dialog > div > div:nth-child(2) > div:nth-child(1)'
+        ).all_inner_texts()
+    )[0].split("\n")
+    return parse_player(raw_player)
+
+
+async def get_player_fixtures(page):
+    section = (
+        'div#root-dialog > div[role="presentation"] > dialog > div > div:nth-child(2)'
+    )
+
+    await page.locator(
+        section + " > div:nth-child(2) > ul > li:nth-child(2) > a"
+    ).click()
+    # I'm not sure why, but the table is not loaded immediately for players that have been flagged
+    await sleep(0.1)
+    print(
+        await page.locator(
+            section
+            + " > div:nth-child(2) > div:nth-child(2) > div > div > table:nth-child(2) > tbody"
+        ).all_text_contents()
+    )
+    return
 
 
 async def close_player_dialog(page):
@@ -66,18 +93,16 @@ def parse_player(raw_player):
     end_idx = 24 if is_flagged else 23
     clean_player = raw_player[start_idx:end_idx]
 
-    print(
-        {
-            "position": clean_player[0],
-            "name": clean_player[1],
-            "team": clean_player[2],
-            "price": float(clean_player[4][1 : len(clean_player[4]) - 1]),
-            "form": float(clean_player[7]),
-            "points_per_match": float(clean_player[9]),
-            "gameweek_points": int(clean_player[12]),
-            "total_points": int(clean_player[14]),
-            "total_bonus": int(clean_player[16]),
-            "ict_index": float(clean_player[18]),
-            "tsb": float(clean_player[21][:-1]),
-        }
-    )
+    return {
+        "position": clean_player[0],
+        "name": clean_player[1],
+        "team": clean_player[2],
+        "price": float(clean_player[4][1 : len(clean_player[4]) - 1]),
+        "form": float(clean_player[7]),
+        "points_per_match": float(clean_player[9]),
+        "gameweek_points": int(clean_player[12]),
+        "total_points": int(clean_player[14]),
+        "total_bonus": int(clean_player[16]),
+        "ict_index": float(clean_player[18]),
+        "tsb": float(clean_player[21][:-1]),
+    }
