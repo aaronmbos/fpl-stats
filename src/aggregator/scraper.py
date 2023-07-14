@@ -63,13 +63,16 @@ async def get_player_fixtures(page):
         section + " > div:nth-child(2) > ul > li:nth-child(2) > a"
     ).click()
     # I'm not sure why, but the table is not loaded immediately for players that have been flagged
-    await sleep(0.1)
-    print(
-        await page.locator(
-            section
-            + " > div:nth-child(2) > div:nth-child(2) > div > div > table:nth-child(2) > tbody"
-        ).all_text_contents()
-    )
+    await sleep(1)
+    raw_fixtures = await page.locator(
+        section
+        + " > div:nth-child(2) > div:nth-child(2) > div > div > table:nth-child(2) > tbody"
+    ).all_text_contents()
+
+    for char in raw_fixtures[0]:
+        # TODO: Can I parse this  efficiently?
+        print(char)
+
     return
 
 
