@@ -67,7 +67,7 @@ async def get_player_fixtures(page):
     raw_fixtures = await page.locator(
         section
         + " > div:nth-child(2) > div:nth-child(2) > div > div > table:nth-child(2) > tbody"
-    ).all_text_contents()
+    ).all_text_contents()  # TODO: This doesn't include the fixture difficulty rating
 
     for char in raw_fixtures[0]:
         # TODO: Can I parse this  efficiently?
