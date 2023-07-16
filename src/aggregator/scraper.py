@@ -67,11 +67,29 @@ async def get_player_fixtures(page):
     raw_fixtures = await page.locator(
         section
         + " > div:nth-child(2) > div:nth-child(2) > div > div > table:nth-child(2) > tbody"
-    ).all_text_contents()  # TODO: This doesn't include the fixture difficulty rating
+    ).all_text_contents()
 
+    fixture = {}
+    fixtures = []
+    space_count = 0
     for char in raw_fixtures[0]:
-        # TODO: Can I parse this  efficiently?
-        print(char)
+        if char == " ":
+            space_count += 1
+            continue
+
+        if space_count <= 3:
+            if fixture.get("date") and len(fixture.get("date")) == 3:
+                fixture["date"] += " "
+                continue
+
+            if fixture.get("date"):
+                fixture["date"] += char
+                continue
+            else:
+                fixture["date"] = char
+                continue
+
+        print(fixture)
 
     return
 
