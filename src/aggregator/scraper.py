@@ -69,70 +69,17 @@ async def get_player_fixtures(page):
         + " > div:nth-child(2) > div:nth-child(2) > div > div > table:nth-child(2) > tbody"
     ).all_text_contents()
 
-    fixture = {}
+    start_idx = 0
+    end_idx = raw_fixtures[0].index(")") + 2
+
     fixtures = []
-    space_count = 0
-    print(raw_fixtures[0])
-    # This is pretty close, but need to account for None and TBC gameweeks
-    for char in raw_fixtures[0]:
-        if char == " ":
-            space_count += 1
-
-        if space_count < 3:
-            if fixture.get("date"):
-                fixture["date"] += char
-                continue
-            else:
-                fixture["date"] = char
-                continue
-        elif not fixture.get("time") or len(fixture.get("time")) < 5:
-            if char == " ":
-                continue
-
-            if fixture.get("time"):
-                fixture["time"] += char
-                continue
-            else:
-                fixture["time"] = char
-                continue
-        else:
-            if (
-                isinstance(try_parse_int(char), int)
-                and (
-                    not fixture.get("gameweek") or len(str(fixture.get("gameweek"))) < 2
-                )
-                and not fixture.get("opponent")
-            ):
-                if fixture.get("gameweek"):
-                    fixture["gameweek"] += int(char)
-                    continue
-                else:
-                    fixture["gameweek"] = int(char)
-                    continue
-            elif not fixture.get("opponent") or len(fixture.get("opponent")) < 3:
-                if fixture.get("opponent"):
-                    fixture["opponent"] += char
-                    continue
-                else:
-                    fixture["opponent"] = char
-                    continue
-            elif not fixture.get("home_away") or len(fixture.get("home_away")) < 1:
-                if char == " " or char == "(" or char == ")":
-                    continue
-                else:
-                    fixture["home_away"] = char
-                    continue
-            elif (
-                not fixture.get("difficulty") or len(str(fixture.get("difficulty"))) < 1
-            ):
-                if isinstance(try_parse_int(char), int):
-                    fixture["difficulty"] = int(char)
-                    continue
-            else:
-                fixtures.append(fixture)
-                space_count = 0
-                fixture = {"date": char}
-                continue
+    while start_idx < len(raw_fixtures[0]):
+        fixtures.append(raw_fixtures[0][start_idx:end_idx])
+        start_idx = end_idx
+        try:
+            end_idx = raw_fixtures[0].index(")", start_idx) + 2
+        except ValueError:
+            break
 
     print(fixtures)
 
