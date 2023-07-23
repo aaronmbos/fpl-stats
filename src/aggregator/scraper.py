@@ -74,16 +74,58 @@ async def get_player_fixtures(page):
 
     fixtures = []
     while start_idx < len(raw_fixtures[0]):
-        fixtures.append(raw_fixtures[0][start_idx:end_idx])
+        # print(raw_fixtures[0][start_idx:end_idx])
+        fixtures.append(parse_fixture(raw_fixtures[0][start_idx:end_idx]))
         start_idx = end_idx
         try:
             end_idx = raw_fixtures[0].index(")", start_idx) + 2
         except ValueError:
             break
 
-    print(fixtures)
+    return fixtures
 
-    return
+
+def parse_fixture(raw_fixture):
+    space_count = 0
+    fixture = {}
+
+    # TODO: Figure out how to handle None and TBC
+    if "\xa0" in raw_fixture:
+        print(raw_fixture.split("\xa0"))
+
+    for char in raw_fixture:
+        if char == " ":
+            space_count += 1
+
+        if space_count < 3:
+            set_or_append(fixture, "date", char)
+        elif space_count < 4:
+            if char != " " and (
+                not fixture.get("time") or len(fixture.get("time")) <= 4
+            ):
+                set_or_append(fixture, "time", char)
+            elif isinstance(try_parse_int(char), int) and (
+                not fixture.get("gameweek") or len(fixture.get("gameweek")) <= 2
+            ):
+                set_or_append(fixture, "gameweek", char)
+            elif char != " ":
+                set_or_append(fixture, "opponent", char)
+        else:
+            if char == "(" or char == ")" or char == " ":
+                continue
+            elif not isinstance(try_parse_int(char), int):
+                fixture["home_away"] = char
+            else:
+                fixture["difficulty"] = int(char)
+
+    return fixture
+
+
+def set_or_append(obj, key, value):
+    if obj.get(key):
+        obj[key] += value
+    else:
+        obj[key] = value
 
 
 def try_parse_int(s):
