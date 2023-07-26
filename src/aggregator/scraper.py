@@ -42,10 +42,11 @@ async def get_player_data(page):
         player_summary = await get_player_summary(page)
         player_fixtures = await get_player_fixtures(page)
 
+        # TODO get the player history section (currently not filled out)
+
         player_summary["fixtures"] = player_fixtures
 
         # print(player_summary)
-        # TODO: Format the data as JSON, bring in the database
 
         await close_player_dialog(page)
 
