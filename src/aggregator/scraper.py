@@ -131,8 +131,18 @@ def parse_fixture(raw_fixture):
             parse_fixture(fixture_gameweek),
         ]
     elif "TBC" in raw_fixture:
-        # TODO: Handle TBC fixtures
-        return
+        [opponent, details] = raw_fixture.split(" ")
+        opponent = opponent[3:]
+        home_away = details[1]
+        difficulty = int(details[-1])
+        return [
+            {
+                "gameweek": "TBC",
+                "opponent": opponent,
+                "home_away": home_away,
+                "difficulty": difficulty,
+            }
+        ]
 
     for char in raw_fixture:
         if char == " ":
