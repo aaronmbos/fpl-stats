@@ -40,7 +40,12 @@ async def get_player_data(page):
         await player_info_btns.nth(i).click()
 
         player_summary = await get_player_summary(page)
-        await get_player_fixtures(page)
+        player_fixtures = await get_player_fixtures(page)
+
+        player_summary["fixtures"] = player_fixtures
+
+        # print(player_summary)
+        # TODO: Format the data as JSON, bring in the database
 
         await close_player_dialog(page)
 
