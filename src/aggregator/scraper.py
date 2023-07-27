@@ -40,13 +40,14 @@ async def get_player_data(page):
         await player_info_btns.nth(i).click()
 
         player_summary = await get_player_summary(page)
+        # This should be before fixtures, because fixtures requires a click
+        player_season_stats = await get_season_stats(page)
         player_fixtures = await get_player_fixtures(page)
 
-        # TODO get the player history section (currently not filled out)
-
         player_summary["fixtures"] = player_fixtures
+        player_summary["season_stats"] = player_season_stats
 
-        # print(player_summary)
+        print(player_summary)
 
         await close_player_dialog(page)
 
@@ -87,8 +88,17 @@ async def get_player_fixtures(page):
         except ValueError:
             break
 
-    print(fixtures)
     return fixtures
+
+
+async def get_season_stats(page):
+    # Since season hasn't started the table of stats isn't available
+    # This is the div that should hold the table
+    placeholder = await page.locator(
+        'div#root-dialog > div[role="presentation"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div > div > div > p:nth-child(2)'
+    ).all_text_contents()
+
+    return placeholder
 
 
 async def close_player_dialog(page):
