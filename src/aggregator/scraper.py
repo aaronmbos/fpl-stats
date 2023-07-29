@@ -106,6 +106,7 @@ async def get_season_stats(page):
 async def get_player_history(page):
     await sleep(0.5)
     # Evaluating this JS isn't great, but the raw text would have been impossible to parse
+    # TODO: Parse into a structured format
     stats = await page.evaluate(
         "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div > div > div:nth-child(2) > table > tbody > tr').forEach((row, idx) => {stats.push([]); row.children.forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
     )
