@@ -41,11 +41,13 @@ async def get_player_data(page):
 
         player_summary = await get_player_summary(page)
         # This should be before fixtures, because fixtures requires a click
+        player_history = await get_player_history(page)
         player_season_stats = await get_season_stats(page)
         player_fixtures = await get_player_fixtures(page)
 
         player_summary["fixtures"] = player_fixtures
         player_summary["season_stats"] = player_season_stats
+        player_summary["history"] = player_history
 
         print(player_summary)
 
@@ -99,6 +101,16 @@ async def get_season_stats(page):
     ).all_text_contents()
 
     return placeholder
+
+
+async def get_player_history(page):
+    await sleep(0.5)
+    # Evaluating this JS isn't great, but the raw text would have been impossible to parse
+    stats = await page.evaluate(
+        "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div > div > div:nth-child(2) > table > tbody > tr').forEach((row, idx) => {stats.push([]); row.children.forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
+    )
+
+    return stats
 
 
 async def close_player_dialog(page):
