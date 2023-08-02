@@ -1,5 +1,6 @@
 from asyncio import sleep
 from playwright.async_api import async_playwright
+import json
 
 
 async def scrape():
@@ -40,14 +41,14 @@ async def get_player_data(page):
         await player_info_btns.nth(i).click()
 
         player_summary = await get_player_summary(page)
-        # This should be before fixtures, because fixtures requires a click
-        player_history = await get_player_history(page)
         player_season_stats = await get_season_stats(page)
+        player_history = await get_player_history(page)
+        # Since fixtures requires a click, gather after stats and history
         player_fixtures = await get_player_fixtures(page)
 
-        player_summary["fixtures"] = player_fixtures
         player_summary["season_stats"] = player_season_stats
         player_summary["history"] = player_history
+        player_summary["fixtures"] = player_fixtures
 
         print(player_summary)
 
@@ -106,12 +107,47 @@ async def get_season_stats(page):
 async def get_player_history(page):
     await sleep(0.5)
     # Evaluating this JS isn't great, but the raw text would have been impossible to parse
-    # TODO: Parse into a structured format
     stats = await page.evaluate(
         "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div > div > div:nth-child(2) > table > tbody > tr').forEach((row, idx) => {stats.push([]); row.children.forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
     )
 
-    return stats
+    if len(stats) == 0:
+        return []
+
+    parsed_stats = []
+    for row in stats:
+        parsed_stats.append(
+            {
+                "season": row[0],
+                "points": int(row[1]),
+                "games_started": int(row[2]),
+                "minutes_played": int(row[3].replace(",", "")),
+                "goals_scored": int(row[4]),
+                "assists": int(row[5]),
+                "expected_goals": float(row[6]),
+                "expected_assists": float(row[7]),
+                "expected_goal_involvements": float(row[8]),
+                "clean_sheets": int(row[9]),
+                "goals_conceded": int(row[10]),
+                "expected_goals_conceded": float(row[11]),
+                "own_goals": int(row[12]),
+                "penalties_saved": int(row[13]),
+                "penalties_missed": int(row[14]),
+                "yellow_cards": int(row[15]),
+                "red_cards": int(row[16]),
+                "saves": int(row[17]),
+                "bonus_points": int(row[18]),
+                "bonus_points_system": int(row[19].replace(",", "")),
+                "influence": float(row[20]),
+                "creativity": float(row[21]),
+                "threat": float(row[22]),
+                "ict_index": float(row[23]),
+                "season_start_price": float(row[24][1 : len(row[25]) - 1]),
+                "season_end_price": float(row[25][1 : len(row[25]) - 1]),
+            }
+        )
+
+    return parsed_stats
 
 
 async def close_player_dialog(page):
