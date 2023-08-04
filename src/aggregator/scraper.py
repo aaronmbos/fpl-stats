@@ -1,6 +1,11 @@
 from asyncio import sleep
 from playwright.async_api import async_playwright
 import json
+import logging.config
+
+
+logger = logging.getLogger(__name__)
+logging.config.fileConfig("./logging_config/dev.ini")
 
 
 async def scrape():
@@ -14,7 +19,10 @@ async def scrape():
         page_count = await get_page_count(page)
 
         for page_idx in range(0, page_count):
-            await get_player_data(page)
+            player_data = await get_player_data_for_page(page)
+            print(json.dumps(player_data))
+            logger.info("Collected player data from page %s.", page_idx + 1)
+
             if page_idx < page_count - 1:
                 await click_next_page(page)
 
@@ -23,20 +31,26 @@ async def scrape():
 
 async def accept_cookies(page):
     await page.locator("button#onetrust-accept-btn-handler").click()
+    logger.info("Cookies accepted.")
 
 
 async def get_page_count(page):
     text = await page.locator(
         "main > div > div:nth-child(2) > div > div > div > div"
     ).all_text_contents()
-    return int(text[1].split(" ")[-1])
+
+    page_count = int(text[1].split(" ")[-1])
+    logger.info("Found %s pages of player data.", page_count)
+
+    return page_count
 
 
-async def get_player_data(page):
+async def get_player_data_for_page(page):
     player_info_btns = page.locator(
         "main > div > div:nth-child(2) > div > div > table tbody tr > td:nth-child(1) > button:nth-child(1)"
     )
 
+    player_data = []
     for i in range(0, await player_info_btns.count()):
         await player_info_btns.nth(i).click()
 
@@ -50,9 +64,11 @@ async def get_player_data(page):
         player_summary["history"] = player_history
         player_summary["fixtures"] = player_fixtures
 
-        print(player_summary)
+        player_data.append(player_summary)
 
         await close_player_dialog(page)
+
+    return player_data
 
 
 async def get_player_summary(page):

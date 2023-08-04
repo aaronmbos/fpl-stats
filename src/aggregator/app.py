@@ -9,8 +9,9 @@ async def main():
     try:
         logger.info("Starting data aggregation.")
         await scrape()
+        logger.info("Data aggregation completed.")
     except:
-        logger.error("An error occurred during data aggregation", exc_info=True)
+        logger.error("An error occurred during data aggregation.", exc_info=True)
 
 
 asyncio.run(main())
