@@ -56,9 +56,9 @@ async def get_player_data_for_page(page):
 
         player_summary = await get_player_summary(page)
         player_season_stats = await get_season_stats(page)
-        player_history = await get_player_history(page)
+        player_history = await retry(get_player_history, page)
         # Since fixtures requires a click, gather after stats and history
-        player_fixtures = await get_player_fixtures(page)
+        player_fixtures = await retry(get_player_fixtures, page)
 
         player_summary["season_stats"] = player_season_stats
         player_summary["history"] = player_history
@@ -88,8 +88,7 @@ async def get_player_fixtures(page):
     await page.locator(
         section + " > div:nth-child(2) > ul > li:nth-child(2) > a"
     ).click()
-    # I'm not sure why, but the table is not loaded immediately for players that have been flagged
-    await sleep(1)
+
     raw_fixtures = await page.locator(
         section
         + " > div:nth-child(2) > div:nth-child(2) > div > div > table:nth-child(2) > tbody"
@@ -121,7 +120,6 @@ async def get_season_stats(page):
 
 
 async def get_player_history(page):
-    await sleep(0.5)
     # Evaluating this JS isn't great, but the raw text would have been impossible to parse
     stats = await page.evaluate(
         "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div > div > div:nth-child(2) > table > tbody > tr').forEach((row, idx) => {stats.push([]); row.children.forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
@@ -265,3 +263,14 @@ def try_parse_int(s):
         return int(s)
     except ValueError:
         return s
+
+
+async def retry(func, *args):
+    for i in range(5):
+        try:
+            return await func(*args)
+        except Exception as e:
+            print(f"Failed attempt {i+1} of {5}: {e}")
+            await sleep(0.2)
+            continue
+    raise Exception(f"Function {func.__name__} failed after {5} retries")
