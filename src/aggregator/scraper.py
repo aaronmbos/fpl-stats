@@ -1,7 +1,7 @@
 from asyncio import sleep
 from playwright.async_api import async_playwright
-import json
 import logging.config
+from database import insert_many
 
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,8 @@ async def scrape():
 
         for page_idx in range(0, page_count):
             player_data = await get_player_data_for_page(page)
-            print(json.dumps(player_data))
+            insert_many(player_data)
+
             logger.info("Collected player data from page %s.", page_idx + 1)
 
             if page_idx < page_count - 1:
