@@ -9,6 +9,10 @@ logging.config.fileConfig("./logging_config/dev.ini")
 
 
 async def scrape():
+    # How will I determine if data should be scraped?
+    # Let's just run it everyday at midnight
+    # Each run will overwrite the previous data
+    # Plan for overwriting entire dataset will be to insert into temp collection, then swap and delete previous
     async with async_playwright() as p:
         browser = await p.chromium.launch()
         page = await browser.new_page()
@@ -111,13 +115,15 @@ async def get_player_fixtures(page):
 
 
 async def get_season_stats(page):
-    # Since season hasn't started the table of stats isn't available
-    # This is the div that should hold the table
-    placeholder = await page.locator(
-        'div#root-dialog > div[role="presentation"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div > div > div > p:nth-child(2)'
-    ).all_text_contents()
+    raw_gameweek_stats = await page.evaulate(
+        "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div > div > div:nth-child(1) > div:nth-child(2) > table > tbody > tr').forEach((row, idx) => {stats.push([]); row.children.forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
+    )
+    raw_aggregate_stats = await page.evaulate(
+        "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div > div > div:nth-child(1) > div:nth-child(2) > table > tfoot > tr').forEach((row, idx) => {stats.push([]); row.children.forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
+    )
 
-    return placeholder
+    # TODO: Parse raw data into structured format
+    return {}
 
 
 async def get_player_history(page):
