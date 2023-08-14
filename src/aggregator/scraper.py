@@ -24,7 +24,7 @@ async def scrape():
 
         for page_idx in range(0, page_count):
             player_data = await get_player_data_for_page(page)
-            insert_many(player_data)
+            # insert_many(player_data)
 
             logger.info("Collected player data from page %s.", page_idx + 1)
 
@@ -61,13 +61,13 @@ async def get_player_data_for_page(page):
 
         player_summary = await get_player_summary(page)
         player_season_stats = await get_season_stats(page)
-        player_history = await retry(get_player_history, page)
-        # Since fixtures requires a click, gather after stats and history
-        player_fixtures = await retry(get_player_fixtures, page)
+        # player_history = await retry(get_player_history, page)
+        ## Since fixtures requires a click, gather after stats and history
+        # player_fixtures = await retry(get_player_fixtures, page)
 
         player_summary["season_stats"] = player_season_stats
-        player_summary["history"] = player_history
-        player_summary["fixtures"] = player_fixtures
+        # player_summary["history"] = player_history
+        # player_summary["fixtures"] = player_fixtures
 
         player_data.append(player_summary)
 
@@ -115,19 +115,35 @@ async def get_player_fixtures(page):
 
 
 async def get_season_stats(page):
-    raw_gameweek_stats = await page.evaulate(
-        "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div > div > div:nth-child(1) > div:nth-child(2) > table > tbody > tr').forEach((row, idx) => {stats.push([]); row.children.forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
-    )
-    raw_aggregate_stats = await page.evaulate(
+    # TODO: Add retries once parsing is complete
+    gw_stats = await get_gameweek_stats(page)
+    totals = await get_season_stat_totals(page)
+    return {
+        "gameweek_stats": gw_stats,
+        "aggregate_stats": totals,
+    }
+
+
+async def get_season_stat_totals(page):
+    [raw_totals, raw_per_ninety] = await page.evaluate(
         "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div > div > div:nth-child(1) > div:nth-child(2) > table > tfoot > tr').forEach((row, idx) => {stats.push([]); row.children.forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
     )
 
-    # TODO: Parse raw data into structured format
-    return {}
+    return {"season_totals": raw_totals, "stats_per_ninety": raw_per_ninety}
+
+
+async def get_gameweek_stats(page):
+    raw_gameweek_stats = await page.evaluate(
+        "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div > div > div:nth-child(1) > div:nth-child(2) > table > tbody > tr').forEach((row, idx) => {stats.push([]); row.children.forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
+    )
+    parsed_gw_stats = []
+    for gw in raw_gameweek_stats:
+        parsed_gw_stats.append({})
+
+    return parsed_gw_stats
 
 
 async def get_player_history(page):
-    # Evaluating this JS isn't great, but the raw text would have been impossible to parse
     stats = await page.evaluate(
         "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div > div > div:nth-child(2) > table > tbody > tr').forEach((row, idx) => {stats.push([]); row.children.forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
     )
@@ -207,6 +223,7 @@ def parse_player(raw_player):
 
 
 def parse_fixture(raw_fixture):
+    # This could probably be done more elegantly by evaluating JS
     space_count = 0
     fixture = {}
 
