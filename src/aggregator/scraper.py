@@ -116,8 +116,8 @@ async def get_player_fixtures(page):
 
 async def get_season_stats(page):
     # TODO: Add retries once parsing is complete
-    gw_stats = await get_gameweek_stats(page)
-    totals = await get_season_stat_totals(page)
+    gw_stats = await retry(get_gameweek_stats, page)
+    totals = await retry(get_season_stat_totals, page)
     return {
         "gameweek_stats": gw_stats,
         "aggregate_stats": totals,
@@ -136,6 +136,12 @@ async def get_gameweek_stats(page):
     raw_gameweek_stats = await page.evaluate(
         "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div > div > div:nth-child(1) > div:nth-child(2) > table > tbody > tr').forEach((row, idx) => {stats.push([]); row.children.forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
     )
+
+    ## TODO: Need to figure out why these fail after 5 attempts.
+    if raw_gameweek_stats == []:
+        raise Exception("No gameweek stats found")
+    print(raw_gameweek_stats)
+
     parsed_gw_stats = []
     for gw in raw_gameweek_stats:
         parsed_gw_stats.append({})
@@ -294,7 +300,7 @@ async def retry(func, *args):
         try:
             return await func(*args)
         except Exception as e:
-            print(f"Failed attempt {i+1} of {5}: {e}")
-            await sleep(0.2)
+            logger.warning(f"Failed attempt {i+1} of {5}: {e}")
+            await sleep(0.2 * i)
             continue
     raise Exception(f"Function {func.__name__} failed after {5} retries")
