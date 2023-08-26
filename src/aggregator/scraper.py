@@ -60,6 +60,7 @@ async def get_player_data_for_page(page):
         await player_info_btns.nth(i).click()
 
         player_summary = await get_player_summary(page)
+        print(player_summary["name"])
         player_season_stats = await get_season_stats(page)
         # player_history = await retry(get_player_history, page)
         ## Since fixtures requires a click, gather after stats and history
@@ -115,7 +116,6 @@ async def get_player_fixtures(page):
 
 
 async def get_season_stats(page):
-    # TODO: Add retries once parsing is complete
     gw_stats = await retry(get_gameweek_stats, page)
     totals = await retry(get_season_stat_totals, page)
     return {
@@ -128,7 +128,7 @@ async def get_season_stat_totals(page):
     [raw_totals, raw_per_ninety] = await page.evaluate(
         "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div > div > div:nth-child(1) > div:nth-child(2) > table > tfoot > tr').forEach((row, idx) => {stats.push([]); row.children.forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
     )
-
+    # TODO: Need to parse these raw values
     return {"season_totals": raw_totals, "stats_per_ninety": raw_per_ninety}
 
 
@@ -137,14 +137,44 @@ async def get_gameweek_stats(page):
         "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div > div > div:nth-child(1) > div:nth-child(2) > table > tbody > tr').forEach((row, idx) => {stats.push([]); row.children.forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
     )
 
-    ## TODO: Need to figure out why these fail after 5 attempts.
     if raw_gameweek_stats == []:
         raise Exception("No gameweek stats found")
-    print(raw_gameweek_stats)
 
     parsed_gw_stats = []
     for gw in raw_gameweek_stats:
-        parsed_gw_stats.append({})
+        parsed_gw_stats.append(
+            {
+                "gameweek": int(gw[0]),
+                "opponent": gw[1].strip(),
+                "outcome": gw[2],
+                "points": int(gw[3]),
+                "start": int(gw[4]),
+                "minutes_played": int(gw[5]),
+                "goals_scored": int(gw[6]),
+                "assists": int(gw[7]),
+                "expected_goals": float(gw[8]),
+                "expected_assists": float(gw[9]),
+                "expected_goal_involvements": float(gw[10]),
+                "clean_sheets": int(gw[11]),
+                "goals_conceded": int(gw[12]),
+                "expected_goals_conceded": float(gw[13]),
+                "own_goals": int(gw[14]),
+                "penalties_saved": int(gw[15]),
+                "penalties_missed": int(gw[16]),
+                "yellow_cards": int(gw[17]),
+                "red_cards": int(gw[18]),
+                "saves": int(gw[19]),
+                "bonus_points": int(gw[20]),
+                "bonus_points_system": int(gw[21].replace(",", "")),
+                "influence": float(gw[22]),
+                "creativity": float(gw[23]),
+                "threat": float(gw[24]),
+                "ict_index": float(gw[25]),
+                "nt": int(gw[26]),
+                "sb": int(gw[27]),
+                "price": float(gw[28][1 : len(gw[28]) - 1]),
+            }
+        )
 
     return parsed_gw_stats
 
@@ -185,7 +215,7 @@ async def get_player_history(page):
                 "creativity": float(row[21]),
                 "threat": float(row[22]),
                 "ict_index": float(row[23]),
-                "season_start_price": float(row[24][1 : len(row[25]) - 1]),
+                "season_start_price": float(row[24][1 : len(row[24]) - 1]),
                 "season_end_price": float(row[25][1 : len(row[25]) - 1]),
             }
         )
@@ -296,7 +326,7 @@ def try_parse_int(s):
 
 
 async def retry(func, *args):
-    for i in range(5):
+    for i in range(10):
         try:
             return await func(*args)
         except Exception as e:
