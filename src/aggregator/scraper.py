@@ -129,7 +129,18 @@ async def get_season_stat_totals(page):
         "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div > div > div:nth-child(1) > div:nth-child(2) > table > tfoot > tr').forEach((row, idx) => {stats.push([]); row.children.forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
     )
     # TODO: Need to parse these raw values
-    return {"season_totals": raw_totals, "stats_per_ninety": raw_per_ninety}
+    return {
+        "season_totals": parse_season_totals(raw_totals),
+        "stats_per_ninety": parse_per_ninety_stats(raw_per_ninety),
+    }
+
+
+def parse_season_totals(raw_totals):
+    return {}
+
+
+def parse_per_ninety_stats(raw_per_ninety):
+    return {}
 
 
 async def get_gameweek_stats(page):
@@ -140,6 +151,10 @@ async def get_gameweek_stats(page):
     if raw_gameweek_stats == []:
         raise Exception("No gameweek stats found")
 
+    return parse_gameweek_stats(raw_gameweek_stats)
+
+
+def parse_gameweek_stats(raw_gameweek_stats):
     parsed_gw_stats = []
     for gw in raw_gameweek_stats:
         parsed_gw_stats.append(
@@ -175,20 +190,23 @@ async def get_gameweek_stats(page):
                 "price": float(gw[28][1 : len(gw[28]) - 1]),
             }
         )
-
     return parsed_gw_stats
 
 
 async def get_player_history(page):
-    stats = await page.evaluate(
+    raw_stat_history = await page.evaluate(
         "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div > div > div:nth-child(2) > table > tbody > tr').forEach((row, idx) => {stats.push([]); row.children.forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
     )
 
-    if len(stats) == 0:
+    if len(raw_stat_history) == 0:
         return []
 
+    return parse_player_history(raw_stat_history)
+
+
+def parse_player_history(raw_stat_history):
     parsed_stats = []
-    for row in stats:
+    for row in raw_stat_history:
         parsed_stats.append(
             {
                 "season": row[0],
@@ -219,7 +237,6 @@ async def get_player_history(page):
                 "season_end_price": float(row[25][1 : len(row[25]) - 1]),
             }
         )
-
     return parsed_stats
 
 
