@@ -9,6 +9,13 @@ client = MongoClient(os.getenv("CONNECTION_STRING"), server_api=ServerApi("1"))
 db = client.get_database("fpl-stats")
 
 
-def insert_many(documents):
-    result = db[os.getenv("MONGO_COLLECTION")].insert_many(documents)
+def insert_players(documents):
+    tmp_collection = f"{os.getenv('MONGO_COLLECTION')}_tmp"
+    result = db[tmp_collection].insert_many(documents)
     print(result.inserted_ids)
+
+
+def swap_collections():
+    original_collection = os.getenv("MONGO_COLLECTION")
+    tmp_collection = f"{original_collection}_tmp"
+    db[tmp_collection].rename(original_collection, dropTarget=True)

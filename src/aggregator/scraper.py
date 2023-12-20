@@ -1,7 +1,7 @@
 from asyncio import sleep
 from playwright.async_api import async_playwright
 import logging.config
-from database import insert_many
+from database import insert_players, swap_collections
 
 
 logger = logging.getLogger(__name__)
@@ -24,12 +24,14 @@ async def scrape():
 
         for page_idx in range(0, page_count):
             player_data = await get_player_data_for_page(page)
-            # insert_many(player_data)
+            insert_players(player_data)
 
             logger.info("Collected player data from page %s.", page_idx + 1)
 
             if page_idx < page_count - 1:
                 await click_next_page(page)
+
+        swap_collections()
 
         await browser.close()
 
@@ -60,15 +62,14 @@ async def get_player_data_for_page(page):
         await player_info_btns.nth(i).click()
 
         player_summary = await get_player_summary(page)
-        print(player_summary["name"])
         player_season_stats = await get_season_stats(page)
-        # player_history = await retry(get_player_history, page)
+        player_history = await retry(get_player_history, page)
         ## Since fixtures requires a click, gather after stats and history
-        # player_fixtures = await retry(get_player_fixtures, page)
+        player_fixtures = await retry(get_player_fixtures, page)
 
         player_summary["season_stats"] = player_season_stats
-        # player_summary["history"] = player_history
-        # player_summary["fixtures"] = player_fixtures
+        player_summary["history"] = player_history
+        player_summary["fixtures"] = player_fixtures
 
         player_data.append(player_summary)
 
@@ -136,11 +137,11 @@ async def get_season_stat_totals(page):
 
 
 def parse_season_totals(raw_totals):
-    return {}
+    return {"raw": raw_totals}
 
 
 def parse_per_ninety_stats(raw_per_ninety):
-    return {}
+    return {"raw": raw_per_ninety}
 
 
 async def get_gameweek_stats(page):
@@ -193,6 +194,7 @@ def parse_gameweek_stats(raw_gameweek_stats):
     return parsed_gw_stats
 
 
+# TODO: This is returning the full dataset of gameweek and history, need to get just history
 async def get_player_history(page):
     raw_stat_history = await page.evaluate(
         "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div > div > div:nth-child(2) > table > tbody > tr').forEach((row, idx) => {stats.push([]); row.children.forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
