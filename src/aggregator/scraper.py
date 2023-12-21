@@ -1,7 +1,7 @@
 from asyncio import sleep
 from playwright.async_api import async_playwright
 import logging.config
-from database import insert_players, swap_collections
+from database import insert_players, swap_collections, init_db
 
 
 logger = logging.getLogger(__name__)
@@ -21,6 +21,8 @@ async def scrape():
         await accept_cookies(page)
 
         page_count = await get_page_count(page)
+
+        init_db()
 
         for page_idx in range(0, page_count):
             player_data = await get_player_data_for_page(page)
@@ -129,7 +131,6 @@ async def get_season_stat_totals(page):
     [raw_totals, raw_per_ninety] = await page.evaluate(
         "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div > div > div:nth-child(1) > div:nth-child(2) > table > tfoot > tr').forEach((row, idx) => {stats.push([]); row.children.forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
     )
-    # TODO: Need to parse these raw values
     return {
         "season_totals": parse_season_totals(raw_totals),
         "stats_per_ninety": parse_per_ninety_stats(raw_per_ninety),
@@ -137,11 +138,43 @@ async def get_season_stat_totals(page):
 
 
 def parse_season_totals(raw_totals):
-    return {"raw": raw_totals}
+    return {
+        "points": int(raw_totals[3].replace(",", "")),
+        "starts": int(raw_totals[4]),
+        "minutes": int(raw_totals[5].replace(",", "")),
+        "goals_scored": int(raw_totals[6]),
+        "assists": int(raw_totals[7]),
+        "expected_goals": float(raw_totals[8]),
+        "expected_assists": float(raw_totals[9]),
+        "expected_goal_involvements": float(raw_totals[10]),
+        "clean_sheets": int(raw_totals[11]),
+        "goals_conceded": int(raw_totals[12]),
+        "expected_goals_conceded": float(raw_totals[13]),
+        "own_goals": int(raw_totals[14]),
+        "penalties_saved": int(raw_totals[15]),
+        "penalties_missed": int(raw_totals[16]),
+        "yellow_cards": int(raw_totals[17]),
+        "red_cards": int(raw_totals[18]),
+        "saves": int(raw_totals[19]),
+        "bonus_points": int(raw_totals[20]),
+        "bonus_point_system": int(raw_totals[21].replace(",", "")),
+        "influence": float(raw_totals[22].replace(",", "")),
+        "creativity": float(raw_totals[23].replace(",", "")),
+        "threat": float(raw_totals[24].replace(",", "")),
+        "ict_index": float(raw_totals[25].replace(",", "")),
+    }
 
 
 def parse_per_ninety_stats(raw_per_ninety):
-    return {"raw": raw_per_ninety}
+    return {
+        "expected_goals": float(raw_per_ninety[8]),
+        "expected_assists": float(raw_per_ninety[9]),
+        "expected_goal_involvements": float(raw_per_ninety[10]),
+        "clean_sheets": float(raw_per_ninety[11]),
+        "goals_conceded": float(raw_per_ninety[12]),
+        "expected_goals_conceded": float(raw_per_ninety[13]),
+        "saves": float(raw_per_ninety[19]),
+    }
 
 
 async def get_gameweek_stats(page):
@@ -194,10 +227,9 @@ def parse_gameweek_stats(raw_gameweek_stats):
     return parsed_gw_stats
 
 
-# TODO: This is returning the full dataset of gameweek and history, need to get just history
 async def get_player_history(page):
     raw_stat_history = await page.evaluate(
-        "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div > div > div:nth-child(2) > table > tbody > tr').forEach((row, idx) => {stats.push([]); row.children.forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
+        "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div > div:nth-child(2) > div:nth-child(2) > table > tbody > tr').forEach((row, idx) => {stats.push([]); row.children.forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
     )
 
     if len(raw_stat_history) == 0:
