@@ -9,10 +9,6 @@ logging.config.fileConfig("./logging_config/dev.ini")
 
 
 async def scrape():
-    # How will I determine if data should be scraped?
-    # Let's just run it everyday at midnight
-    # Each run will overwrite the previous data
-    # Plan for overwriting entire dataset will be to insert into temp collection, then swap and delete previous
     async with async_playwright() as p:
         browser = await p.chromium.launch()
         page = await browser.new_page()
@@ -295,6 +291,11 @@ def parse_player(raw_player):
     clean_player = raw_player[start_idx:end_idx]
 
     return {
+        "status": {"flag": "active"}
+        if not is_flagged
+        else {"flag": "yellow", "reason": raw_player[0]}
+        if "chance of playing" in raw_player[0]
+        else {"flag": "red", "reason": raw_player[0]},
         "position": clean_player[0],
         "name": clean_player[1],
         "team": clean_player[2],
@@ -377,11 +378,12 @@ def try_parse_int(s):
 
 
 async def retry(func, *args):
-    for i in range(10):
+    max_retries = 10
+    for i in range(max_retries):
         try:
             return await func(*args)
         except Exception as e:
-            logger.warning(f"Failed attempt {i+1} of {5}: {e}")
+            logger.debug(f"Failed attempt {i+1} of {max_retries}: {e}")
             await sleep(0.2 * i)
             continue
-    raise Exception(f"Function {func.__name__} failed after {5} retries")
+    raise Exception(f"Function {func.__name__} failed after {max_retries} retries")
