@@ -1,10 +1,15 @@
 import asyncio
 from scraper import scrape
 import logging.config
+from env_util import get_env
+import newrelic
 
 
 async def main():
-    logging.config.fileConfig("./logging_config/dev.ini")
+    if get_env() != "prod":
+        logger.info("Using dev logging configuration")
+        logging.config.fileConfig("./logging_config/dev.ini")
+
     logger = logging.getLogger(__name__)
     try:
         logger.info("Starting data aggregation.")
