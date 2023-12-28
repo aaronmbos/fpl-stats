@@ -2,13 +2,16 @@ from asyncio import sleep
 from playwright.async_api import async_playwright
 import logging.config
 from database import insert_players, swap_collections, init_db
+from env_util import get_env
 
 
 logger = logging.getLogger(__name__)
-logging.config.fileConfig("./logging_config/dev.ini")
 
 
 async def scrape():
+    if get_env() != "production":
+        logging.config.fileConfig("./logging_config/dev.ini")
+
     async with async_playwright() as p:
         browser = await p.chromium.launch()
         page = await browser.new_page()
