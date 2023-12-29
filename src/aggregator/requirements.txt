@@ -7,4 +7,3 @@ typing_extensions==4.6.3
 python-json-logger==2.0.7
 python-dotenv==1.0.0
 pymongo==4.6.1
-newrelic==9.3.0
