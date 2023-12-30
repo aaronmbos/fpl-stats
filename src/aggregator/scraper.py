@@ -1,4 +1,5 @@
 from asyncio import sleep
+import datetime
 from playwright.async_api import async_playwright
 import logging.config
 from database import insert_players, swap_collections, init_db
@@ -56,6 +57,7 @@ async def get_player_data_for_page(page):
     )
 
     player_data = []
+    run_date = datetime.datetime.now().strftime("%Y-%m-%d")
     for i in range(0, await player_info_btns.count()):
         await player_info_btns.nth(i).click()
 
@@ -68,6 +70,7 @@ async def get_player_data_for_page(page):
         player_summary["season_stats"] = player_season_stats
         player_summary["history"] = player_history
         player_summary["fixtures"] = player_fixtures
+        player_summary["last_updated"] = run_date
 
         player_data.append(player_summary)
 
