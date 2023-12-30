@@ -1,9 +1,9 @@
 from asyncio import sleep
-import datetime
+from datetime import datetime
 from playwright.async_api import async_playwright
 import logging.config
 from database import insert_players, swap_collections, init_db
-
+import pytz
 
 logger = logging.getLogger(__name__)
 logging.config.fileConfig("./logging_config/dev.ini")
@@ -57,7 +57,12 @@ async def get_player_data_for_page(page):
     )
 
     player_data = []
-    run_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    run_date = (
+        datetime.utcnow()
+        .replace(tzinfo=pytz.utc)
+        .astimezone(pytz.timezone("US/Central"))
+        .isoformat()
+    )
     for i in range(0, await player_info_btns.count()):
         await player_info_btns.nth(i).click()
 
