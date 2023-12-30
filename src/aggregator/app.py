@@ -5,7 +5,6 @@ import logging.config
 
 async def main():
     logging.config.fileConfig("./logging_config/dev.ini")
-    logger.info("Using dev logging configuration")
 
     logger = logging.getLogger(__name__)
     try:
