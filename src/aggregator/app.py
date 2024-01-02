@@ -1,12 +1,11 @@
 import asyncio
+from logger import init_logger
 from scraper import scrape
-import logging.config
+
+logger = init_logger(__name__)
 
 
 async def main():
-    logging.config.fileConfig("./logging_config/dev.ini")
-
-    logger = logging.getLogger(__name__)
     try:
         logger.info("Starting data aggregation.")
         await scrape()

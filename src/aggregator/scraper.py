@@ -1,12 +1,12 @@
 from asyncio import sleep
 from datetime import datetime
+from logger import init_logger
 from playwright.async_api import async_playwright
-import logging.config
 from database import insert_players, swap_collections, init_db
 import pytz
 
-logger = logging.getLogger(__name__)
-logging.config.fileConfig("./logging_config/dev.ini")
+
+logger = init_logger(__name__)
 
 
 async def scrape():
