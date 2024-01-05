@@ -10,13 +10,13 @@ app = Quart(__name__)
 @app.route("/", methods=["POST"])
 async def index():
     try:
-        logger.info("Starting data aggregation.")
+        logger.info("Parsing message.")
 
         envelope = await request.get_json()
         if not envelope:
             msg = "No Pub/Sub message received"
             logger.error(f"Data aggregation skipped. {msg}")
-            return f"Bad Request: {msg}", 400
+            return f"Bad Request: {msg}", 204
 
         if (
             not isinstance(envelope, dict)
@@ -27,11 +27,12 @@ async def index():
         ):
             msg = "Invalid Pub/Sub message format"
             logger.error(f"Data aggregation skipped. {msg}")
-            return f"Bad Request: {msg}", 400
+            return f"Bad Request: {msg}", 204
 
+        logger.info("Starting data aggregation.")
         await scrape()
         logger.info("Data aggregation completed.")
         return ("", 204)
     except:
         logger.error("An error occurred during data aggregation.", exc_info=True)
-        return f"Server Error.", 500
+        return f"Server Error.", 204
