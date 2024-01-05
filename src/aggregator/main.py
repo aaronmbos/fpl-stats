@@ -29,7 +29,7 @@ async def index():
             logger.error(f"Data aggregation skipped. {msg}")
             return f"Bad Request: {msg}", 400
 
-        # await scrape()
+        await scrape()
         logger.info("Data aggregation completed.")
         return ("", 204)
     except:

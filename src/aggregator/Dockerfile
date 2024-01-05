@@ -7,7 +7,8 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/app/ms-playwright
 ENV PYTHONUNBUFFERED=1
 
 # Set the working directory in the container
-WORKDIR /app
+ENV APP_HOME /app
+WORKDIR $APP_HOME
 
 # Copy the requirements file into the container at /app
 COPY requirements.txt /app/
@@ -26,5 +27,9 @@ RUN PLAYWRIGHT_BROWSERS_PATH=/app/ms-playwright python -m playwright install --w
 # Copy the current directory contents into the container at /app
 COPY . /app/
 
-# Specify the command to run when the container starts
-CMD ["python3", "app.py"]
+# Run the web service on container startup.
+# Use gunicorn webserver with one worker process and 8 threads.
+# For environments with multiple CPU cores, increase the number of workers
+# to be equal to the cores available.
+# Timeout is set to 0 to disable the timeouts of the workers to allow Cloud Run to handle instance scaling.
+CMD exec gunicorn -k uvicorn.workers.UvicornWorker --bind :$PORT --workers 1 --threads 8 --timeout 0 main:app
