@@ -1,7 +1,7 @@
-from asyncio import sleep
 from datetime import datetime
+from time import sleep
 from logger import init_logger
-from playwright.async_api import async_playwright
+from playwright.sync_api import playwright
 from database import insert_players, swap_collections, init_db
 import pytz
 
@@ -9,39 +9,39 @@ import pytz
 logger = init_logger(__name__)
 
 
-async def scrape():
-    async with async_playwright() as p:
-        browser = await p.chromium.launch()
-        page = await browser.new_page()
-        await page.goto("https://fantasy.premierleague.com/statistics")
+def scrape():
+    with playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page()
+        page.goto("https://fantasy.premierleague.com/statistics")
 
-        await accept_cookies(page)
+        accept_cookies(page)
 
-        page_count = await get_page_count(page)
+        page_count = get_page_count(page)
 
         init_db()
 
         for page_idx in range(0, page_count):
-            player_data = await get_player_data_for_page(page)
+            player_data = get_player_data_for_page(page)
             insert_players(player_data)
 
             logger.info("Collected player data from page %s.", page_idx + 1)
 
             if page_idx < page_count - 1:
-                await click_next_page(page)
+                click_next_page(page)
 
         swap_collections()
 
-        await browser.close()
+        browser.close()
 
 
-async def accept_cookies(page):
-    await page.locator("button#onetrust-accept-btn-handler").click()
+def accept_cookies(page):
+    page.locator("button#onetrust-accept-btn-handler").click()
     logger.info("Cookies accepted.")
 
 
-async def get_page_count(page):
-    text = await page.locator(
+def get_page_count(page):
+    text = page.locator(
         "main > div > div:nth-child(2) > div > div > div > div"
     ).all_text_contents()
 
@@ -51,7 +51,7 @@ async def get_page_count(page):
     return page_count
 
 
-async def get_player_data_for_page(page):
+def get_player_data_for_page(page):
     player_info_btns = page.locator(
         "main > div > div:nth-child(2) > div > div > table tbody tr > td:nth-child(1) > button:nth-child(1)"
     )
@@ -63,14 +63,14 @@ async def get_player_data_for_page(page):
         .astimezone(pytz.timezone("US/Central"))
         .isoformat()
     )
-    for i in range(0, await player_info_btns.count()):
-        await player_info_btns.nth(i).click()
+    for i in range(0, player_info_btns.count()):
+        player_info_btns.nth(i).click()
 
-        player_summary = await get_player_summary(page)
-        player_season_stats = await get_season_stats(page)
-        player_history = await retry(get_player_history, page)
+        player_summary = get_player_summary(page)
+        player_season_stats = get_season_stats(page)
+        player_history = retry(get_player_history, page)
         ## Since fixtures requires a click, gather after stats and history
-        player_fixtures = await retry(get_player_fixtures, page)
+        player_fixtures = retry(get_player_fixtures, page)
 
         player_summary["season_stats"] = player_season_stats
         player_summary["history"] = player_history
@@ -79,30 +79,28 @@ async def get_player_data_for_page(page):
 
         player_data.append(player_summary)
 
-        await close_player_dialog(page)
+        close_player_dialog(page)
 
     return player_data
 
 
-async def get_player_summary(page):
+def get_player_summary(page):
     raw_player = (
-        await page.locator(
+        page.locator(
             'div#root-dialog > div[role="presentation"] > dialog > div > div:nth-child(2) > div:nth-child(1)'
         ).all_inner_texts()
     )[0].split("\n")
     return parse_player(raw_player)
 
 
-async def get_player_fixtures(page):
+def get_player_fixtures(page):
     section = (
         'div#root-dialog > div[role="presentation"] > dialog > div > div:nth-child(2)'
     )
 
-    await page.locator(
-        section + " > div:nth-child(2) > ul > li:nth-child(2) > a"
-    ).click()
+    page.locator(section + " > div:nth-child(2) > ul > li:nth-child(2) > a").click()
 
-    raw_fixtures = await page.locator(
+    raw_fixtures = page.locator(
         section
         + " > div:nth-child(2) > div:nth-child(2) > div > div > table:nth-child(2) > tbody"
     ).all_text_contents()
@@ -122,17 +120,17 @@ async def get_player_fixtures(page):
     return fixtures
 
 
-async def get_season_stats(page):
-    gw_stats = await retry(get_gameweek_stats, page)
-    totals = await retry(get_season_stat_totals, page)
+def get_season_stats(page):
+    gw_stats = retry(get_gameweek_stats, page)
+    totals = retry(get_season_stat_totals, page)
     return {
         "gameweek_stats": gw_stats,
         "aggregate_stats": totals,
     }
 
 
-async def get_season_stat_totals(page):
-    [raw_totals, raw_per_ninety] = await page.evaluate(
+def get_season_stat_totals(page):
+    [raw_totals, raw_per_ninety] = page.evaluate(
         "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div > div > div:nth-child(1) > div:nth-child(2) > table > tfoot > tr').forEach((row, idx) => {stats.push([]); row.children.forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
     )
     return {
@@ -181,8 +179,8 @@ def parse_per_ninety_stats(raw_per_ninety):
     }
 
 
-async def get_gameweek_stats(page):
-    raw_gameweek_stats = await page.evaluate(
+def get_gameweek_stats(page):
+    raw_gameweek_stats = page.evaluate(
         "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div > div > div:nth-child(1) > div:nth-child(2) > table > tbody > tr').forEach((row, idx) => {stats.push([]); row.children.forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
     )
 
@@ -231,8 +229,8 @@ def parse_gameweek_stats(raw_gameweek_stats):
     return parsed_gw_stats
 
 
-async def get_player_history(page):
-    raw_stat_history = await page.evaluate(
+def get_player_history(page):
+    raw_stat_history = page.evaluate(
         "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div > div:nth-child(2) > div:nth-child(2) > table > tbody > tr').forEach((row, idx) => {stats.push([]); row.children.forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
     )
 
@@ -278,14 +276,14 @@ def parse_player_history(raw_stat_history):
     return parsed_stats
 
 
-async def close_player_dialog(page):
-    await page.locator(
+def close_player_dialog(page):
+    page.locator(
         'div#root-dialog > div[role="presentation"] > dialog > div div:nth-child(1) button'
     ).click()
 
 
-async def click_next_page(page):
-    await page.locator(
+def click_next_page(page):
+    page.locator(
         "main > div#root > div:nth-child(2) > div > div:nth-child(1) > div:nth-child(5) > button:nth-child(4)"
     ).click()
 
@@ -385,13 +383,13 @@ def try_parse_int(s):
         return s
 
 
-async def retry(func, *args):
+def retry(func, *args):
     max_retries = 10
     for i in range(max_retries):
         try:
-            return await func(*args)
+            return func(*args)
         except Exception as e:
             logger.debug(f"Failed attempt {i+1} of {max_retries}: {e}")
-            await sleep(0.2 * i)
+            sleep(0.2 * i)
             continue
     raise Exception(f"Function {func.__name__} failed after {max_retries} retries")

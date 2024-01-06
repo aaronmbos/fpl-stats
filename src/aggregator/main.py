@@ -1,18 +1,18 @@
 import base64
-from quart import Quart, request
 from logger import init_logger
 from scraper import scrape
+from flask import Flask, request
 
 logger = init_logger(__name__)
-app = Quart(__name__)
+app = Flask(__name__)
 
 
 @app.route("/", methods=["POST"])
-async def index():
+def index():
     try:
         logger.info("Parsing message.")
 
-        envelope = await request.get_json()
+        envelope = request.get_json()
         if not envelope:
             msg = "No Pub/Sub message received"
             logger.error(f"Data aggregation skipped. {msg}")
@@ -30,7 +30,7 @@ async def index():
             return f"Bad Request: {msg}", 204
 
         logger.info("Starting data aggregation.")
-        await scrape()
+        scrape()
         logger.info("Data aggregation completed.")
         return ("", 204)
     except:
