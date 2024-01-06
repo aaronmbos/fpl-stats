@@ -1,7 +1,7 @@
 from datetime import datetime
 from time import sleep
 from logger import init_logger
-from playwright.sync_api import playwright
+from playwright.sync_api import sync_playwright
 from database import insert_players, swap_collections, init_db
 import pytz
 
