@@ -1,6 +1,6 @@
 # FPL Stat Aggregator
 
-This is an aggregation tool that gathers data from the English Premier League Fantasy [site](https://fantasy.premierleague.com/statistics)https://fantasy.premierleague.com/statistics), parses it into relevant fields that make up the stats, and stores it in a database.
+This is an aggregation tool that gathers data from the English Premier League Fantasy [site](https://fantasy.premierleague.com/statistics), parses it into relevant fields that make up the stats, and stores it in a database.
 
 ## Toolset
 
