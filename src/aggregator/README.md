@@ -14,7 +14,7 @@ This is an aggregation tool that gathers data from the English Premier League Fa
 
 The aggregator application is written in Python. I'll be the first to admit that I'm not an experienced Python developer, but I did my best to follow what I know to be standard practices in regard to the structure of the app.
 
-For development, I use a Python virtual environment or `venv` to promote a consistent and isolated environment. While this isn't a requirement for develop, I'd recommend at least [learning about it]([url](https://docs.python.org/3/library/venv.html)https://docs.python.org/3/library/venv.html). The app also utilizes a `requirements.txt` file to track dependency versions.
+For development, I use a Python virtual environment or `venv` to promote a consistent and isolated environment. While this isn't a requirement for develop, I'd recommend at least [learning about it](https://docs.python.org/3/library/venv.html). The app also utilizes a `requirements.txt` file to track dependency versions.
 
 To get started with development, you'll need to `pip install` the dependencies. From inside the `src/aggregator/` directory run the following command.
 
