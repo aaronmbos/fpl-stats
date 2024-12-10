@@ -131,7 +131,7 @@ def get_season_stats(page):
 
 def get_season_stat_totals(page):
     [raw_totals, raw_per_ninety] = page.evaluate(
-        "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div > div > div:nth-child(1) > div:nth-child(2) > table > tfoot > tr').forEach((row, idx) => {stats.push([]); row.children.forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
+        "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div > div > div:nth-child(1) > div:nth-child(2) > table > tfoot > tr').forEach((row, idx) => {stats.push([]); Array.from(row.children).forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
     )
     return {
         "season_totals": parse_season_totals(raw_totals),
@@ -181,7 +181,7 @@ def parse_per_ninety_stats(raw_per_ninety):
 
 def get_gameweek_stats(page):
     raw_gameweek_stats = page.evaluate(
-        "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div > div > div:nth-child(1) > div:nth-child(2) > table > tbody > tr').forEach((row, idx) => {stats.push([]); row.children.forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
+        "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div > div > div:nth-child(1) > div:nth-child(2) > table > tbody > tr').forEach((row, idx) => {stats.push([]); Array.from(row.children).forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
     )
 
     if raw_gameweek_stats == []:
@@ -231,7 +231,7 @@ def parse_gameweek_stats(raw_gameweek_stats):
 
 def get_player_history(page):
     raw_stat_history = page.evaluate(
-        "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div > div:nth-child(2) > div:nth-child(2) > table > tbody > tr').forEach((row, idx) => {stats.push([]); row.children.forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
+        "() => {var stats = [];document.querySelectorAll('div#root-dialog > div[role=\"presentation\"] > dialog > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div > div:nth-child(2) > div:nth-child(2) > table > tbody > tr').forEach((row, idx) => {stats.push([]); Array.from(row.children).forEach(cell => stats[idx].push(cell.textContent))}); return stats;}"
     )
 
     if len(raw_stat_history) == 0:
@@ -297,11 +297,15 @@ def parse_player(raw_player):
     clean_player = raw_player[start_idx:end_idx]
 
     return {
-        "status": {"flag": "active"}
-        if not is_flagged
-        else {"flag": "yellow", "reason": raw_player[0]}
-        if "chance of playing" in raw_player[0]
-        else {"flag": "red", "reason": raw_player[0]},
+        "status": (
+            {"flag": "active"}
+            if not is_flagged
+            else (
+                {"flag": "yellow", "reason": raw_player[0]}
+                if "chance of playing" in raw_player[0]
+                else {"flag": "red", "reason": raw_player[0]}
+            )
+        ),
         "position": clean_player[0],
         "name": clean_player[1],
         "team": clean_player[2],
