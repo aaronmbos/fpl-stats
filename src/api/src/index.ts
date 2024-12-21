@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 
 const app = new Hono();
 
@@ -33,12 +33,19 @@ app.get("/players", async (c) => {
     const database = client.db(process.env.DB_NAME);
     const collection = database.collection(process.env.COLLECTION_NAME!);
 
-    const { page, limit } = c.req.query();
+    // TODO: Validate query parameters
+    const { page, limit, sortBy, order } = c.req.query();
     const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    let sortConfig = {};
+    if (sortBy) {
+      sortConfig = { [sortBy]: order === "asc" ? 1 : -1 };
+    }
 
     // Retrieve all documents
     const players = await collection
-      .find({})
+      .find({}, { projection: { season_stats: 0, history: 0, fixtures: 0 } })
+      .sort(sortConfig)
       .skip(skip)
       .limit(parseInt(limit))
       .toArray();
@@ -48,6 +55,26 @@ app.get("/players", async (c) => {
   } catch (error) {
     console.error("Error retrieving players:", error);
     return c.json({ error: "Failed to retrieve players" }, 500);
+  }
+});
+
+app.get("/players/:id", async (c) => {
+  try {
+    // Connect to the specific database and collection
+    const database = client.db(process.env.DB_NAME);
+    const collection = database.collection(process.env.COLLECTION_NAME!);
+
+    const playerId = c.req.param("id");
+    const player = await collection.findOne({ _id: new ObjectId(playerId) });
+
+    if (!player) {
+      return c.json({ error: "Player not found" }, 404);
+    }
+
+    return c.json(player);
+  } catch (error) {
+    console.error("Error retrieving player:", error);
+    return c.json({ error: "Failed to retrieve player" }, 500);
   }
 });
 
