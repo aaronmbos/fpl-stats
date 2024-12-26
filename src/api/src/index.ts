@@ -2,7 +2,10 @@ import "dotenv/config";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { MongoClient, ObjectId } from "mongodb";
-import { processPlayers } from "./routeProcessors/playerRoutes.js";
+import {
+  processGetPlayer,
+  processGetPlayers,
+} from "./routeProcessors/playerRoutes.js";
 
 const app = new Hono();
 
@@ -30,7 +33,7 @@ app.use("*", async (c, next) => {
 
 app.get("/players", async (c) => {
   try {
-    const result = await processPlayers(client, c.req.query());
+    const result = await processGetPlayers(client, c.req.query());
 
     return c.json(result);
   } catch (error) {
@@ -41,11 +44,7 @@ app.get("/players", async (c) => {
 
 app.get("/players/:id", async (c) => {
   try {
-    const database = client.db(process.env.DB_NAME);
-    const collection = database.collection(process.env.COLLECTION_NAME!);
-
-    const playerId = c.req.param("id");
-    const player = await collection.findOne({ _id: new ObjectId(playerId) });
+    const player = await processGetPlayer(client, c.req.param("id"));
 
     if (!player) {
       return c.json({ error: "Player not found" }, 404);

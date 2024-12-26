@@ -1,4 +1,4 @@
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import type {
   Fixture,
   GameweekStats,
@@ -17,10 +17,10 @@ interface ProcessPlayersResult {
   players: PlayerSummary[];
 }
 
-export const processPlayers = async (
+export async function processGetPlayers(
   mongoClient: MongoClient,
   queryParams: Record<string, string>
-): Promise<ProcessPlayersResult> => {
+): Promise<ProcessPlayersResult> {
   const database = mongoClient.db(process.env.DB_NAME);
   const collection = database.collection(process.env.COLLECTION_NAME!);
   const { page, limit, sortBy, order, team, position, maxPrice, minPrice } =
@@ -90,7 +90,19 @@ export const processPlayers = async (
     totalCount: totalCount,
     players: players.map((dbPlayer) => ToPlayerSummary(dbPlayer)),
   };
-};
+}
+
+export async function processGetPlayer(
+  mongoClient: MongoClient,
+  playerId: string
+): Promise<Player | undefined> {
+  const database = mongoClient.db(process.env.DB_NAME);
+  const collection = database.collection(process.env.COLLECTION_NAME!);
+
+  const player = await collection.findOne({ _id: new ObjectId(playerId) });
+
+  return ToPlayer(player);
+}
 
 function ToPlayerSummary(doc: any): PlayerSummary {
   return {
@@ -111,7 +123,11 @@ function ToPlayerSummary(doc: any): PlayerSummary {
   };
 }
 
-export function ToPlayer(doc: any): Player {
+export function ToPlayer(doc: any): Player | undefined {
+  if (!doc) {
+    return undefined;
+  }
+
   return {
     id: doc._id,
     status: doc.status,
@@ -127,23 +143,23 @@ export function ToPlayer(doc: any): Player {
     ictIndex: doc.ict_index,
     tsb: doc.tsb,
     seasonStats: {
-      gameweekStats: doc.season_stats?.gameweek_stats?.map(ToGameweekStats),
+      gameweekStats: doc.season_stats?.gameweek_stats?.map(toGameweekStats),
       aggregateStats: {
-        seasonTotals: ToSeasonTotals(
+        seasonTotals: toSeasonTotals(
           doc.season_stats?.aggregate_stats.season_totals
         ),
-        statsPerNinety: ToStatsPerNinety(
+        statsPerNinety: toStatsPerNinety(
           doc.season_stats?.aggregate_stats.stats_per_ninety
         ),
       },
     },
-    history: doc.history?.map(ToHistoryEntry),
-    fixtures: doc.fixtures?.map(ToFixture),
+    history: doc.history?.map(toHistoryEntry),
+    fixtures: doc.fixtures?.map(toFixture),
     lastUpdated: doc.last_updated,
   };
 }
 
-function ToGameweekStats(gw: any): GameweekStats {
+function toGameweekStats(gw: any): GameweekStats {
   return {
     gameweek: gw.gameweek,
     opponent: gw.opponent,
@@ -177,7 +193,7 @@ function ToGameweekStats(gw: any): GameweekStats {
   };
 }
 
-function ToSeasonTotals(totals: any): SeasonTotals | undefined {
+function toSeasonTotals(totals: any): SeasonTotals | undefined {
   if (!totals) return undefined;
   return {
     points: totals.points,
@@ -206,7 +222,7 @@ function ToSeasonTotals(totals: any): SeasonTotals | undefined {
   };
 }
 
-function ToStatsPerNinety(stats: any): StatsPerNinety | undefined {
+function toStatsPerNinety(stats: any): StatsPerNinety | undefined {
   if (!stats) return undefined;
   return {
     expectedGoals: stats.expected_goals,
@@ -219,7 +235,7 @@ function ToStatsPerNinety(stats: any): StatsPerNinety | undefined {
   };
 }
 
-function ToHistoryEntry(h: any): HistoryEntry {
+function toHistoryEntry(h: any): HistoryEntry {
   return {
     season: h.season,
     points: h.points,
@@ -250,7 +266,7 @@ function ToHistoryEntry(h: any): HistoryEntry {
   };
 }
 
-function ToFixture(f: any): Fixture {
+function toFixture(f: any): Fixture {
   return {
     date: f.date,
     time: f.time,
