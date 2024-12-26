@@ -42,10 +42,10 @@ def accept_cookies(page):
 
 def get_page_count(page):
     text = page.locator(
-        "main > div > div:nth-child(2) > div > div > div > div"
+        "main > div > div:nth-child(2) > div > div > div:nth-child(5) > div"
     ).all_text_contents()
 
-    page_count = int(text[1].split(" ")[-1])
+    page_count = int(text[0].split(" ")[-1])
     logger.info("Found %s pages of player data.", page_count)
 
     return page_count
