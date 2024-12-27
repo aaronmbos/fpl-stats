@@ -121,6 +121,7 @@ export interface Fixture {
 
 export type Player = {
   id: string;
+  // playerId is a hashed value of the player's postion|name|team
   playerId: string;
   status: Status;
   position: string;
