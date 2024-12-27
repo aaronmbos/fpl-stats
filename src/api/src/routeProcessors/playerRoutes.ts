@@ -92,14 +92,14 @@ export async function processGetPlayers(
   };
 }
 
-export async function processGetPlayer(
+export async function processGetPlayerById(
   mongoClient: MongoClient,
   playerId: string
 ): Promise<Player | undefined> {
   const database = mongoClient.db(process.env.DB_NAME);
   const collection = database.collection(process.env.COLLECTION_NAME!);
 
-  const player = await collection.findOne({ _id: new ObjectId(playerId) });
+  const player = await collection.findOne({ player_id: playerId });
 
   return ToPlayer(player);
 }
@@ -107,6 +107,7 @@ export async function processGetPlayer(
 function ToPlayerSummary(doc: any): PlayerSummary {
   return {
     id: doc._id,
+    playerId: doc.player_id,
     status: doc.status,
     position: doc.position,
     name: doc.name,
@@ -130,6 +131,7 @@ export function ToPlayer(doc: any): Player | undefined {
 
   return {
     id: doc._id,
+    playerId: doc.player_id,
     status: doc.status,
     position: doc.position,
     name: doc.name,

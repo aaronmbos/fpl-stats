@@ -3,7 +3,7 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { MongoClient, ObjectId } from "mongodb";
 import {
-  processGetPlayer,
+  processGetPlayerById,
   processGetPlayers,
 } from "./routeProcessors/playerRoutes.js";
 
@@ -44,7 +44,7 @@ app.get("/players", async (c) => {
 
 app.get("/players/:id", async (c) => {
   try {
-    const player = await processGetPlayer(client, c.req.param("id"));
+    const player = await processGetPlayerById(client, c.req.param("id"));
 
     if (!player) {
       return c.json({ error: "Player not found" }, 404);

@@ -121,6 +121,7 @@ export interface Fixture {
 
 export type Player = {
   id: string;
+  playerId: string;
   status: Status;
   position: string;
   name: string;
