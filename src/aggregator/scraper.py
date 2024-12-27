@@ -301,7 +301,7 @@ def parse_player(raw_player):
     unique_string = (
         f"{clean_player[0].strip()}|{clean_player[1].strip()}|{clean_player[2].strip()}"
     )
-    unique_hash = hashlib.sha256(unique_string.encode("utf-8")).hexdigest()
+    unique_hash = hashlib.md5(unique_string.encode("utf-8")).hexdigest()
 
     return {
         "player_id": unique_hash,
