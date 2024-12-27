@@ -4,6 +4,7 @@ from logger import init_logger
 from playwright.sync_api import sync_playwright
 from database import insert_players, swap_collections, init_db
 import pytz
+import hashlib
 
 
 logger = init_logger(__name__)
@@ -296,7 +297,14 @@ def parse_player(raw_player):
     end_idx = 24 if is_flagged else 23
     clean_player = raw_player[start_idx:end_idx]
 
+    # This isn't perfect, but it's the best way to create a consistent identifier for a player
+    unique_string = (
+        f"{clean_player[0].strip()}|{clean_player[1].strip()}|{clean_player[2].strip()}"
+    )
+    unique_hash = hashlib.sha256(unique_string.encode("utf-8")).hexdigest()
+
     return {
+        "player_id": unique_hash,
         "status": (
             {"flag": "active"}
             if not is_flagged
